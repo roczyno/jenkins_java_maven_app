@@ -91,7 +91,7 @@ pipeline {
                             git status
                             git branch
 
-                            git add .
+                            git add pom.xml
                             git commit -m "ci: version bump" || echo "No changes to commit"
 
                             git push https://$USER:$PASS@github.com/roczyno/jenkins_java_maven_app.git HEAD:jenkins-jobs

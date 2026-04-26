@@ -50,7 +50,7 @@ pipeline {
                 script {
                     echo "Deploying docker image to EC2"
                     def installDockerCMD = "sudo yum install -y docker && sudo systemctl start docker && sudo usermod -aG docker \$(whoami)"
-                    def dockerRunCMD = "docker run -d -p 3080:3080 ${IMAGE_NAME}:jma-3.0"
+                    def dockerRunCMD = "docker run -d -p 8080:8080 ${IMAGE_NAME}:jma-3.0"
                     withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sshagent(['ec2-server-key']) {
                             sh "ssh -o StrictHostKeyChecking=no ec2-user@3.85.4.100 'which docker || (${installDockerCMD})'"

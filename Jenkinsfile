@@ -38,9 +38,9 @@ pipeline {
         stage("build and push image") {
             steps {
                 script {
-                    buildImage "${IMAGE_NAME}:jma-3.0"
+                    buildImage(env.IMAGE_NAME)
                     dockerLogin()
-                    dockerPush "${IMAGE_NAME}:jma-3.0"
+                    dockerPush(env.IMAGE_NAME)
                 }
             }
         }
@@ -50,7 +50,7 @@ pipeline {
                 script {
                     echo "Deploying docker image to EC2"
                     def installDockerCMD = "sudo yum install -y docker && sudo systemctl start docker && sudo usermod -aG docker \$(whoami)"
-                    def dockerRunCMD = "docker run -d -p 8080:8080 ${IMAGE_NAME}:jma-3.0"
+                    def dockerRunCMD = "docker run -p 8080:8080 ${env.IMAGE_NAME}"
                     withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sshagent(['ec2-server-key']) {
                             sh "ssh -o StrictHostKeyChecking=no ec2-user@3.85.4.100 'which docker || (${installDockerCMD})'"

@@ -50,16 +50,14 @@ pipeline {
                 script {
                     echo "Deploying docker image to EC2"
                     def installDockerCMD = "sudo yum install -y docker && sudo systemctl start docker && sudo usermod -aG docker \$(whoami)"
-                    def stopOldCMD = "docker ps -q --filter 'publish=8080' | xargs -r docker stop | xargs -r docker rm || true"
-                    def dockerPullCMD = "docker pull ${env.IMAGE_NAME}"
-                    def dockerRunCMD = "docker run -d -p 8080:8080 ${env.IMAGE_NAME}"
+                    def installComposeCMD = "sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-\$(uname -s)-\$(uname -m) -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose"
                     withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sshagent(['ec2-server-key']) {
                             sh "ssh -o StrictHostKeyChecking=no ec2-user@3.85.4.100 'which docker || (${installDockerCMD})'"
+                            sh "ssh -o StrictHostKeyChecking=no ec2-user@3.85.4.100 'which docker-compose || (${installComposeCMD})'"
                             sh "ssh -o StrictHostKeyChecking=no ec2-user@3.85.4.100 'echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin'"
-                            sh "ssh -o StrictHostKeyChecking=no ec2-user@3.85.4.100 '${stopOldCMD}'"
-                            sh "ssh -o StrictHostKeyChecking=no ec2-user@3.85.4.100 '${dockerPullCMD}'"
-                            sh "ssh -o StrictHostKeyChecking=no ec2-user@3.85.4.100 '${dockerRunCMD}'"
+                            sh "scp -o StrictHostKeyChecking=no docker-compose.yml ec2-user@3.85.4.100:/home/ec2-user/docker-compose.yml"
+                            sh "ssh -o StrictHostKeyChecking=no ec2-user@3.85.4.100 'IMAGE=${env.IMAGE_NAME} docker-compose -f /home/ec2-user/docker-compose.yml up -d'"
                         }
                     }
                 }

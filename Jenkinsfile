@@ -11,6 +11,13 @@ pipeline {
     tools {
         maven 'maven-3.9'
     }
+
+    environment {
+        IMAGE_NAME = 'roczyno/demo-app:java-maven-1.0'
+    }
+
+
+
     stages {
         stage("init") {
             steps {
@@ -31,9 +38,9 @@ pipeline {
         stage("build and push image") {
             steps {
                 script {
-                    buildImage 'roczyno/demo-app:jma-3.0'
+                    buildImage "${IMAGE_NAME}:jma-3.0"
                     dockerLogin()
-                    dockerPush 'roczyno/demo-app:jma-3.0'
+                    dockerPush "${IMAGE_NAME}:jma-3.0"
                 }
             }
         }
@@ -41,7 +48,16 @@ pipeline {
         stage("deploy") {
             steps {
                 script {
-                    gv.deployApp()
+                    echo "Deploying docker image to EC2"
+                    def installDockerCMD = "sudo yum install -y docker && sudo systemctl start docker && sudo usermod -aG docker \$(whoami)"
+                    def dockerRunCMD = "docker run -d -p 3080:3080 ${IMAGE_NAME}:jma-3.0"
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sshagent(['ec2-server-key']) {
+                            sh "ssh -o StrictHostKeyChecking=no ec2-user@3.85.4.100 'which docker || (${installDockerCMD})'"
+                            sh "ssh -o StrictHostKeyChecking=no ec2-user@3.85.4.100 'echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin'"
+                            sh "ssh -o StrictHostKeyChecking=no ec2-user@3.85.4.100 '${dockerRunCMD}'"
+                        }
+                    }
                 }
             }
         }               

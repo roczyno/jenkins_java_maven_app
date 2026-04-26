@@ -13,12 +13,29 @@ pipeline {
     }
 
     environment {
-        IMAGE_NAME = 'roczyno/demo-app:java-maven-1.0'
+        IMAGE_REPO = 'roczyno/demo-app'
     }
 
 
 
     stages {
+
+         stage('increment version') {
+            steps {
+                script {
+                    echo 'incrementing app version...'
+                    sh 'mvn build-helper:parse-version versions:set \
+                        -DnewVersion=\\\${parsedVersion.majorVersion}.\\\${parsedVersion.minorVersion}.\\\${parsedVersion.nextIncrementalVersion} \
+                        versions:commit'
+                    def matcher = readFile('pom.xml') =~ '<version>(.+)</version>'
+                    def version = matcher[0][1]
+                    env.IMAGE_NAME = "${IMAGE_REPO}:${version}-${BUILD_NUMBER}"
+                }
+            }
+
+
+
+
         stage("init") {
             steps {
                 script {
@@ -62,6 +79,28 @@ pipeline {
                     }
                 }
             }
-        }               
+        } 
+
+
+        stage('commit version update') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'github_credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        sh '''
+                            git config --global user.email "jenkins@example.com"
+                            git config --global user.name "jenkins"
+
+                            git status
+                            git branch
+
+                            git add .
+                            git commit -m "ci: version bump" || echo "No changes to commit"
+
+                            git push https://$USER:$PASS@github.com/roczyno/jenkins_java_maven_app.git HEAD:jenkins-jobs
+                        '''
+                    }
+                }
+            }
+        }              
     }
 }

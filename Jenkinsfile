@@ -32,9 +32,7 @@ pipeline {
                     env.IMAGE_NAME = "${IMAGE_REPO}:${version}-${BUILD_NUMBER}"
                 }
             }
-
-
-
+        }
 
         stage("init") {
             steps {

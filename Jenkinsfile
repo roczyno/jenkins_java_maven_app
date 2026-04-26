@@ -88,13 +88,15 @@ pipeline {
                             git config --global user.email "jenkins@example.com"
                             git config --global user.name "jenkins"
 
-                            git status
-                            git branch
+                            git remote set-url origin https://$USER:$PASS@github.com/roczyno/jenkins_java_maven_app.git
+                            git fetch origin jenkins-shared-lib
+                            git checkout jenkins-shared-lib
+                            git pull origin jenkins-shared-lib
 
                             git add pom.xml
                             git commit -m "ci: version bump" || echo "No changes to commit"
 
-                            git push https://$USER:$PASS@github.com/roczyno/jenkins_java_maven_app.git HEAD:jenkins-jobs
+                            git push origin jenkins-shared-lib
                         '''
                     }
                 }
